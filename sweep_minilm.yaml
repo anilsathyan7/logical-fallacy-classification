@@ -1,0 +1,42 @@
+program: main.py
+project: fallacy-classifier
+method: bayes
+
+metric:
+  name: dev_macro_f1
+  goal: maximize
+
+command:
+  - ${env}
+  - python3
+  - ${program}
+
+parameters:
+  checkpoint:
+    value: sentence-transformers/all-MiniLM-L6-v2
+  dataset_name:
+    value: kuwrom/fallacy
+  dataset_config:
+    value: classification
+  text_column:
+    value: text
+  label_column:
+    value: label
+  batch_size:
+    value: 16
+  num_epochs:
+    value: 10
+  learning_rate:
+    values: [0.00001, 0.00002, 0.00003]
+  weight_decay:
+    values: [0.0, 0.01]
+  warmup_ratio:
+    values: [0.0, 0.06]
+  early_stopping_patience:
+    value: 3
+  seed:
+    value: 42
+  max_grad_norm:
+    value: 1.0
+  mixed_precision:
+    value: bf16
