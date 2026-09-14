@@ -13,7 +13,14 @@ wheels/
 .venv
 
 # Local experiment outputs
-checkpoints/
+checkpoints/*
+!checkpoints/best_model/
+checkpoints/best_model/*
+!checkpoints/best_model/8wfncto3/
+!checkpoints/best_model/8wfncto3/config.json
+!checkpoints/best_model/8wfncto3/model.safetensors
+!checkpoints/best_model/8wfncto3/tokenizer.json
+!checkpoints/best_model/8wfncto3/tokenizer_config.json
 plots/*
 !plots/data/
 plots/data/*
@@ -26,6 +33,13 @@ plots/training/8wfncto3/*
 !plots/training/8wfncto3/accuracy.png
 !plots/training/8wfncto3/loss.png
 !plots/training/8wfncto3/macro_f1.png
+!plots/evaluation/
+plots/evaluation/*
+!plots/evaluation/8wfncto3/
+plots/evaluation/8wfncto3/*
+!plots/evaluation/8wfncto3/test_classification_report.json
+!plots/evaluation/8wfncto3/test_confusion_matrix.png
+!plots/evaluation/8wfncto3/test_embedding_umap.png
 wandb/
 
 # Local datasets and generated data

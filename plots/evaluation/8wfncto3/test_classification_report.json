@@ -1,0 +1,99 @@
+{
+  "ad_hominem": {
+    "precision": 0.9705882352941176,
+    "recall": 0.9582577132486388,
+    "f1-score": 0.9643835616438357,
+    "support": 1102.0
+  },
+  "ad_populum": {
+    "precision": 0.7114228456913828,
+    "recall": 0.7304526748971193,
+    "f1-score": 0.7208121827411168,
+    "support": 972.0
+  },
+  "appeal_to_authority": {
+    "precision": 0.9598086124401913,
+    "recall": 0.9644230769230769,
+    "f1-score": 0.9621103117505995,
+    "support": 1040.0
+  },
+  "appeal_to_ignorance": {
+    "precision": 0.9976923076923077,
+    "recall": 0.9984603541185527,
+    "f1-score": 0.9980761831473643,
+    "support": 1299.0
+  },
+  "cherry_picking": {
+    "precision": 0.9236111111111112,
+    "recall": 0.9319319319319319,
+    "f1-score": 0.9277528649725959,
+    "support": 999.0
+  },
+  "circular_reasoning": {
+    "precision": 0.9777195281782438,
+    "recall": 0.9815789473684211,
+    "f1-score": 0.979645436638214,
+    "support": 760.0
+  },
+  "equivocation": {
+    "precision": 0.9730569948186528,
+    "recall": 0.9771071800208116,
+    "f1-score": 0.9750778816199377,
+    "support": 961.0
+  },
+  "false_causality": {
+    "precision": 0.9733990147783251,
+    "recall": 0.9801587301587301,
+    "f1-score": 0.9767671774592189,
+    "support": 1008.0
+  },
+  "false_dilemma": {
+    "precision": 0.9921875,
+    "recall": 0.9866814650388457,
+    "f1-score": 0.9894268224819143,
+    "support": 901.0
+  },
+  "hasty_generalization": {
+    "precision": 0.9348697394789579,
+    "recall": 0.9255952380952381,
+    "f1-score": 0.9302093718843469,
+    "support": 1008.0
+  },
+  "loaded_question": {
+    "precision": 0.9961139896373057,
+    "recall": 0.9961139896373057,
+    "f1-score": 0.9961139896373057,
+    "support": 772.0
+  },
+  "red_herring": {
+    "precision": 0.969,
+    "recall": 0.9518664047151277,
+    "f1-score": 0.9603567888999008,
+    "support": 1018.0
+  },
+  "slippery_slope": {
+    "precision": 0.9874152952565344,
+    "recall": 0.9922178988326849,
+    "f1-score": 0.9898107714701602,
+    "support": 1028.0
+  },
+  "the_bandwagon": {
+    "precision": 0.7318321392016377,
+    "recall": 0.7222222222222222,
+    "f1-score": 0.7269954245043213,
+    "support": 990.0
+  },
+  "accuracy": 0.9355606869678165,
+  "macro avg": {
+    "precision": 0.9356226652556261,
+    "recall": 0.9355048448006219,
+    "f1-score": 0.9355384834893453,
+    "support": 13858.0
+  },
+  "weighted avg": {
+    "precision": 0.9358256027202422,
+    "recall": 0.9355606869678165,
+    "f1-score": 0.9356675843627917,
+    "support": 13858.0
+  }
+}

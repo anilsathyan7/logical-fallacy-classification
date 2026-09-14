@@ -1,11 +1,14 @@
 """Run fallacy-classifier training and W&B experiment tracking."""
 
+import gc
 from pathlib import Path
 
+import torch
 import wandb
 from accelerate import Accelerator
 from accelerate.utils import set_seed
 
+from embedding import save_umap_comparison_plot
 from config import (
     BATCH_SIZE,
     BEST_MODEL_PATH,
@@ -13,12 +16,14 @@ from config import (
     DATASET_CONFIG,
     DATASET_NAME,
     EARLY_STOPPING_PATIENCE,
+    EVALUATION_PLOTS_DIR,
     LABEL_COLUMN,
     LEARNING_RATE,
     MAX_GRAD_NORM,
     MIXED_PRECISION,
     NUM_EPOCHS,
     RUN_TEST,
+    RUN_UMAP_ANALYSIS,
     SEED,
     TEXT_COLUMN,
     WANDB_MODE,
@@ -30,6 +35,10 @@ from data import prepare_data
 from metrics import evaluate_model
 from model import create_model, create_optimizer, create_scheduler
 from train import train
+from utils import (
+    save_classification_report,
+    save_confusion_matrix,
+)
 
 
 def main():
@@ -53,6 +62,7 @@ def main():
             "max_grad_norm": MAX_GRAD_NORM,
             "mixed_precision": MIXED_PRECISION,
             "run_test": RUN_TEST,
+            "run_umap_analysis": RUN_UMAP_ANALYSIS,
         },
     }
 
@@ -78,6 +88,7 @@ def main():
     max_grad_norm = float(cfg["max_grad_norm"])
     mixed_precision = cfg["mixed_precision"]
     run_test = bool(cfg["run_test"])
+    run_umap_analysis = bool(cfg["run_umap_analysis"])
 
     if early_stopping_patience is not None:
         early_stopping_patience = int(early_stopping_patience)
@@ -202,14 +213,54 @@ def main():
         # 7. FINAL TEST
         # ====================================================
 
+        model_path = Path(BEST_MODEL_PATH) / run.id
+        evaluation_path = Path(EVALUATION_PLOTS_DIR) / run.id
+
         if run_test:
-            test_loss, test_accuracy, test_macro_f1 = evaluate_model(model, test_dataloader)
+            (
+                test_loss,
+                test_accuracy,
+                test_macro_f1,
+                test_references,
+                test_predictions,
+            ) = evaluate_model(model, test_dataloader, return_predictions=True)
+
+            report, report_path = save_classification_report(
+                test_references,
+                test_predictions,
+                label_names,
+                evaluation_path,
+            )
+            confusion_matrix_path = save_confusion_matrix(
+                test_references,
+                test_predictions,
+                label_names,
+                evaluation_path,
+            )
+
+            per_class_metrics = [
+                [
+                    label,
+                    report[label]["precision"],
+                    report[label]["recall"],
+                    report[label]["f1-score"],
+                    int(report[label]["support"]),
+                ]
+                for label in label_names
+            ]
 
             run.log(
                 {
                     "test_loss": test_loss,
                     "test_accuracy": test_accuracy,
                     "test_macro_f1": test_macro_f1,
+                    "test_per_class_metrics": wandb.Table(
+                        columns=["label", "precision", "recall", "f1", "support"],
+                        data=per_class_metrics,
+                    ),
+                    "test_confusion_matrix": wandb.Image(
+                        str(confusion_matrix_path)
+                    ),
                 }
             )
 
@@ -221,11 +272,23 @@ def main():
             print(f"Test Accuracy:  {test_accuracy:.4f}")
             print(f"Test Macro-F1:  {test_macro_f1:.4f}")
 
+            print("\nPer-Class Metrics")
+            print(
+                f"{'Label':<24} {'Precision':>9} {'Recall':>9} "
+                f"{'F1':>9} {'Support':>9}"
+            )
+            for label, precision, recall, f1, support in per_class_metrics:
+                print(
+                    f"{label:<24} {precision:>9.4f} {recall:>9.4f} "
+                    f"{f1:>9.4f} {support:>9}"
+                )
+
+            run.summary["classification_report_path"] = str(report_path)
+            run.summary["confusion_matrix_path"] = str(confusion_matrix_path)
+
         # ====================================================
         # 8. SAVE
         # ====================================================
-
-        model_path = Path(BEST_MODEL_PATH) / run.id
 
         unwrapped_model = accelerator.unwrap_model(model)
         unwrapped_model.save_pretrained(model_path)
@@ -233,6 +296,38 @@ def main():
 
         run.summary["model_path"] = str(model_path)
         print(f"\nModel saved to: {model_path}")
+
+        # ====================================================
+        # 9. UMAP ANALYSIS
+        # ====================================================
+
+        if run_umap_analysis:
+            del model
+            del optimizer
+            del lr_scheduler
+            del unwrapped_model
+            gc.collect()
+
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+            umap_path = save_umap_comparison_plot(
+                texts=dataset["test"][text_column],
+                labels=dataset["test"]["labels"],
+                label_names=label_names,
+                original_model_path=checkpoint,
+                fine_tuned_model_path=model_path,
+                output_dir=evaluation_path,
+                batch_size=batch_size,
+                random_state=seed,
+            )
+
+            run.log(
+                {
+                    "test_embedding_umap": wandb.Image(str(umap_path)),
+                }
+            )
+            run.summary["umap_path"] = str(umap_path)
 
     finally:
 

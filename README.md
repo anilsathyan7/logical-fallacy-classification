@@ -96,7 +96,9 @@ epochs: 10
 
 Validation runs after every epoch and controls early stopping and best-model
 selection. A normal run then evaluates the restored best model once on the test
-split and saves it under `checkpoints/best_model/<run-id>/`.
+split. It saves the model under `checkpoints/best_model/<run-id>/`, saves test
+evaluation artifacts under `plots/evaluation/<run-id>/`, and logs the detailed
+test results to W&B.
 
 The following curves are from the best All-MiniLM run, `8wfncto3`. The plots use
 "dev" as another name for the validation split.
@@ -170,5 +172,56 @@ Best completed Kuwrom runs:
 All three runs used a maximum of 10 epochs, early-stopping patience of 3,
 gradient clipping at `1.0`, seed `42`, and BF16 mixed precision.
 
-The next phase is fine-tuning and evaluation on more realistic CoCoLoFa and
-Touché examples, since Kuwrom may overestimate performance on real arguments.
+## Analysis
+
+### Confusion Matrix
+
+![All-MiniLM normalized test confusion matrix](plots/evaluation/8wfncto3/test_confusion_matrix.png)
+
+Most predictions lie on the diagonal, showing clean separation between the
+majority of classes. The main exception is the symmetric confusion between
+`ad_populum` and `the_bandwagon`: approximately 25% of each class is assigned to
+the other, making this the dominant class-level error.
+
+### Embedding UMAP
+
+![All-MiniLM test embedding UMAP](plots/evaluation/8wfncto3/test_embedding_umap.png)
+
+The UMAP gives a qualitative view of how fine-tuning reshapes the All-MiniLM
+test embeddings.
+
+- The original encoder places most labels in one broad mixed region, with only
+  weak local structure.
+- The fine-tuned encoder forms compact, label-specific clusters, matching the
+  strong diagonal in the confusion matrix and the high F1 scores for most
+  classes.
+- The main remaining issue is narrow label boundaries: related classes such as
+  `ad_populum` and `the_bandwagon` still behave like nearby decision regions.
+- The plot should be read as qualitative structure, not as a precise distance
+  map.
+
+### Per-Class F1
+
+| Performance | Classes |
+| --- | --- |
+| Highest | `appeal_to_ignorance` 0.998, `loaded_question` 0.996, `slippery_slope` 0.990, `false_dilemma` 0.989 |
+| Strong | `circular_reasoning` 0.980, `false_causality` 0.977, `equivocation` 0.975, `ad_hominem` 0.964, `appeal_to_authority` 0.962, `red_herring` 0.960 |
+| Moderate | `hasty_generalization` 0.930, `cherry_picking` 0.928 |
+| Weak | `the_bandwagon` 0.727, `ad_populum` 0.721 |
+
+The two weakest labels differ as follows:
+
+- **Ad populum:** treats widespread belief as evidence that a claim is true.
+- **Bandwagon:** argues that someone should adopt a belief or behavior because
+  many others already have.
+
+Bandwagon is often considered a subtype of ad populum, so this narrow annotation
+boundary likely contributes to both weak F1 scores.
+
+### External Samples
+
+MiniLM correctly classified three of four human-reviewed CoCoLoFa/Touché
+examples, but predicted one `hasty_generalization` as `appeal_to_authority` with
+99.83% confidence. This is too small for an accuracy estimate, but the confident
+error suggests weaker calibration on realistic text; a proper evaluation should
+use all 267 test examples with labels that exactly match Kuwrom.

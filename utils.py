@@ -1,3 +1,4 @@
+import json
 from collections import Counter
 from pathlib import Path
 
@@ -5,6 +6,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from sklearn.metrics import ConfusionMatrixDisplay, classification_report
 
 
 def save_label_distribution_plot(dataset, labels_column, output_dir):
@@ -106,3 +108,60 @@ def save_data_plots(dataset, tokenized_dataset, labels_column, output_dir):
     save_token_lengths_plot(tokenized_dataset, output_dir)
 
     print(f"Data plots saved to: {output_dir}")
+
+
+def save_classification_report(
+    references,
+    predictions,
+    label_names,
+    output_dir,
+):
+    """Create and save per-class precision, recall, F1, and support."""
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    report = classification_report(
+        references,
+        predictions,
+        labels=list(range(len(label_names))),
+        target_names=label_names,
+        output_dict=True,
+        zero_division=0,
+    )
+
+    output_path = output_dir / "test_classification_report.json"
+    output_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    return report, output_path
+
+
+def save_confusion_matrix(
+    references,
+    predictions,
+    label_names,
+    output_dir,
+):
+    """Create and save a row-normalized confusion matrix."""
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / "test_confusion_matrix.png"
+
+    display = ConfusionMatrixDisplay.from_predictions(
+        references,
+        predictions,
+        labels=list(range(len(label_names))),
+        display_labels=label_names,
+        normalize="true",
+        values_format=".2f",
+        xticks_rotation=45,
+        cmap="Blues",
+    )
+    display.figure_.set_size_inches(14, 12)
+    display.ax_.set_title("Normalized Test Confusion Matrix")
+    display.figure_.tight_layout()
+    display.figure_.savefig(output_path, dpi=200)
+    plt.close(display.figure_)
+
+    return output_path
