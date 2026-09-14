@@ -29,10 +29,10 @@ plots/training/8wfncto3/*
 wandb/
 
 # Local datasets and generated data
-cocolofa/
-touche/
-*.csv
-!cocolofa_touche_combined.csv
+datasets/cocolofa/
+datasets/touche/
+datasets/*.csv
+!datasets/cocolofa_touche_combined.csv
 
 # Environment files
 .env

@@ -32,6 +32,10 @@ The current benchmark is the
 dataset. It contains 138,574 short arguments across 14 classes, split into
 110,859 training, 13,857 validation, and 13,858 test examples.
 
+The external CoCoLoFa and Touché sources are stored separately under `datasets/`.
+Their cleaned combined file is `datasets/cocolofa_touche_combined.csv`; it is
+reserved for the next fine-tuning phase and is not used by the current pipeline.
+
 ![Label distribution](plots/data/label_distribution.png)
 
 ![Token-length distribution](plots/data/token_lengths.png)
@@ -55,7 +59,7 @@ for the 14 fallacy labels.
 Create a sweep, then start an agent with the returned sweep ID:
 
 ```bash
-wandb sweep sweep.yaml
+wandb sweep configs/sweep.yaml
 wandb agent --count 6 <entity>/<project>/<sweep-id>
 ```
 
@@ -67,9 +71,9 @@ Use the model-specific files when every architecture must receive its own
 hyperparameter search:
 
 ```text
-sweep_deberta.yaml
-sweep_modernbert.yaml
-sweep_minilm.yaml
+configs/sweep_deberta.yaml
+configs/sweep_modernbert.yaml
+configs/sweep_minilm.yaml
 ```
 
 ## Training
