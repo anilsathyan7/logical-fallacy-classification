@@ -1,3 +1,5 @@
+"""Run fallacy-classifier training and W&B experiment tracking."""
+
 from pathlib import Path
 
 import wandb
@@ -16,28 +18,22 @@ from config import (
     MAX_GRAD_NORM,
     MIXED_PRECISION,
     NUM_EPOCHS,
+    RUN_TEST,
     SEED,
     TEXT_COLUMN,
-    TRAINING_PLOTS_DIR,
     WANDB_MODE,
     WANDB_PROJECT,
     WEIGHT_DECAY,
     WARMUP_RATIO,
 )
 from data import prepare_data
-from metrics import (
-    evaluate_model,
-    plot_training_history,
-)
-from model import (
-    create_model,
-    create_optimizer,
-    create_scheduler,
-)
+from metrics import evaluate_model
+from model import create_model, create_optimizer, create_scheduler
 from train import train
 
 
 def main():
+    """Run the fallacy classifier training pipeline."""
 
     wandb_kwargs = {
         "project": WANDB_PROJECT,
@@ -56,15 +52,14 @@ def main():
             "seed": SEED,
             "max_grad_norm": MAX_GRAD_NORM,
             "mixed_precision": MIXED_PRECISION,
+            "run_test": RUN_TEST,
         },
     }
 
     if WANDB_MODE is not None:
         wandb_kwargs["mode"] = WANDB_MODE
 
-    run = wandb.init(
-        **wandb_kwargs
-    )
+    run = wandb.init(**wandb_kwargs)
 
     cfg = run.config
 
@@ -82,11 +77,10 @@ def main():
     seed = int(cfg["seed"])
     max_grad_norm = float(cfg["max_grad_norm"])
     mixed_precision = cfg["mixed_precision"]
+    run_test = bool(cfg["run_test"])
 
     if early_stopping_patience is not None:
-        early_stopping_patience = int(
-            early_stopping_patience
-        )
+        early_stopping_patience = int(early_stopping_patience)
 
     set_seed(seed)
 
@@ -111,45 +105,21 @@ def main():
             batch_size=batch_size,
         )
 
-        (
-            train_dataloader,
-            validation_dataloader,
-            test_dataloader,
-        ) = dataloaders
+        train_dataloader, validation_dataloader, test_dataloader = dataloaders
 
         print(f"Number of labels: {num_labels}")
-
         print(f"Train size: {len(dataset['train'])}")
-
-        print(
-            f"Validation size: "
-            f"{len(dataset['validation'])}"
-        )
-
+        print(f"Validation size: {len(dataset['validation'])}")
         print(f"Test size: {len(dataset['test'])}")
 
         run.summary["num_labels"] = num_labels
         run.summary["train_size"] = len(dataset["train"])
-        run.summary["validation_size"] = len(
-            dataset["validation"]
-        )
+        run.summary["validation_size"] = len(dataset["validation"])
         run.summary["test_size"] = len(dataset["test"])
 
-        label_names = (
-            dataset["train"]
-            .features["labels"]
-            .names
-        )
-
-        id2label = {
-            label_id: label
-            for label_id, label in enumerate(label_names)
-        }
-
-        label2id = {
-            label: label_id
-            for label_id, label in id2label.items()
-        }
+        label_names = dataset["train"].features["labels"].names
+        id2label = {label_id: label for label_id, label in enumerate(label_names)}
+        label2id = {label: label_id for label_id, label in id2label.items()}
 
         run.summary["label_names"] = label_names
 
@@ -178,10 +148,7 @@ def main():
         # 4. SCHEDULER
         # ====================================================
 
-        num_training_steps = (
-            num_epochs
-            * len(train_dataloader)
-        )
+        num_training_steps = num_epochs * len(train_dataloader)
 
         lr_scheduler = create_scheduler(
             optimizer=optimizer,
@@ -193,9 +160,7 @@ def main():
         # 5. ACCELERATE
         # ====================================================
 
-        accelerator = Accelerator(
-            mixed_precision=mixed_precision
-        )
+        accelerator = Accelerator(mixed_precision=mixed_precision)
 
         (
             train_dataloader,
@@ -231,89 +196,43 @@ def main():
             max_grad_norm=max_grad_norm,
         )
 
-        run.summary["best_validation_macro_f1"] = max(
-            history["validation_macro_f1"]
-        )
+        run.summary["best_validation_macro_f1"] = max(history["validation_macro_f1"])
 
         # ====================================================
-        # 7. PLOT
+        # 7. FINAL TEST
         # ====================================================
 
-        training_plots_dir = (
-            Path(TRAINING_PLOTS_DIR) / run.id
-        )
+        if run_test:
+            test_loss, test_accuracy, test_macro_f1 = evaluate_model(model, test_dataloader)
 
-        plot_training_history(
-            history,
-            training_plots_dir,
-        )
-
-        for plot_path in training_plots_dir.glob(
-            "*.png"
-        ):
             run.log(
                 {
-                    f"plot_{plot_path.stem}": wandb.Image(
-                        str(plot_path)
-                    )
+                    "test_loss": test_loss,
+                    "test_accuracy": test_accuracy,
+                    "test_macro_f1": test_macro_f1,
                 }
             )
 
-        # ====================================================
-        # 8. FINAL TEST
-        # ====================================================
+            print("\n" + "=" * 40)
+            print("FINAL TEST RESULTS")
+            print("=" * 40)
 
-        (
-            test_loss,
-            test_accuracy,
-            test_macro_f1,
-        ) = evaluate_model(
-            model,
-            test_dataloader,
-        )
-
-        run.log(
-            {
-                "test_loss": test_loss,
-                "test_accuracy": test_accuracy,
-                "test_macro_f1": test_macro_f1,
-            }
-        )
-
-        print("\n" + "=" * 40)
-        print("FINAL TEST RESULTS")
-        print("=" * 40)
-
-        print(f"Test Loss:      {test_loss:.4f}")
-
-        print(f"Test Accuracy:  {test_accuracy:.4f}")
-
-        print(f"Test Macro-F1:  {test_macro_f1:.4f}")
+            print(f"Test Loss:      {test_loss:.4f}")
+            print(f"Test Accuracy:  {test_accuracy:.4f}")
+            print(f"Test Macro-F1:  {test_macro_f1:.4f}")
 
         # ====================================================
-        # 9. SAVE
+        # 8. SAVE
         # ====================================================
-
-        unwrapped_model = (
-            accelerator.unwrap_model(model)
-        )
 
         model_path = Path(BEST_MODEL_PATH) / run.id
 
-        unwrapped_model.save_pretrained(
-            model_path
-        )
-
-        tokenizer.save_pretrained(
-            model_path
-        )
+        unwrapped_model = accelerator.unwrap_model(model)
+        unwrapped_model.save_pretrained(model_path)
+        tokenizer.save_pretrained(model_path)
 
         run.summary["model_path"] = str(model_path)
-
-        print(
-            f"\nModel saved to: "
-            f"{model_path}"
-        )
+        print(f"\nModel saved to: {model_path}")
 
     finally:
 

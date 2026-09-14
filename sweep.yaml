@@ -43,3 +43,5 @@ parameters:
     value: 1.0
   mixed_precision:
     value: bf16
+  run_test:
+    value: false

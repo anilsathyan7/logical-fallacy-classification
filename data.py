@@ -36,7 +36,7 @@ def load_data(
         .features[label_column]
     )
 
-    # Convert string labels -> ClassLabel when needed.
+    # Convert string labels to ClassLabel when needed.
     if not isinstance(label_feature, ClassLabel):
         dataset = dataset.class_encode_column(
             label_column
@@ -79,6 +79,7 @@ def tokenize_data(
             truncation=True,
         )
 
+    # Keep only tensors accepted by model(**batch).
     columns_to_remove = [
         column
         for column in dataset["train"].column_names
@@ -178,6 +179,7 @@ def prepare_data(
         text_column,
     )
 
+    # Save label distribution and token length plots.
     save_data_plots(
         dataset,
         tokenized_dataset,

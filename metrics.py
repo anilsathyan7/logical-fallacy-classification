@@ -1,56 +1,44 @@
-from pathlib import Path
-
 import evaluate
-import matplotlib
 import torch
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
 
-from config import TRAINING_PLOTS_DIR
+def evaluate_model(model, dataloader):
+    """
+    Evaluate the model on one dataloader.
 
+    Args:
+        model: Model to evaluate.
+        dataloader: Evaluation DataLoader.
 
-def evaluate_model(
-    model,
-    dataloader,
-):
+    Returns:
+        Loss, accuracy, and macro-F1.
+    """
 
     model.eval()
 
     total_loss = 0.0
     total_examples = 0
 
-    accuracy_metric = evaluate.load(
-        "accuracy"
-    )
-
-    f1_metric = evaluate.load(
-        "f1"
-    )
+    accuracy_metric = evaluate.load("accuracy")
+    f1_metric = evaluate.load("f1")
 
     with torch.no_grad():
 
         for batch in dataloader:
 
             outputs = model(**batch)
-
             loss = outputs.loss
 
+            # Stop early if evaluation becomes numerically unstable.
             if not torch.isfinite(loss):
                 raise FloatingPointError(
                     "Non-finite evaluation loss."
                 )
 
-            predictions = outputs.logits.argmax(
-                dim=-1
-            )
+            predictions = outputs.logits.argmax(dim=-1)
 
             batch_size = batch["labels"].size(0)
-
-            total_loss += (
-                loss.item() * batch_size
-            )
-
+            total_loss += loss.item() * batch_size
             total_examples += batch_size
 
             accuracy_metric.add_batch(
@@ -63,137 +51,8 @@ def evaluate_model(
                 references=batch["labels"],
             )
 
-    loss = (
-        total_loss / total_examples
-    )
-
-    accuracy = (
-        accuracy_metric.compute()["accuracy"]
-    )
-
-    macro_f1 = (
-        f1_metric.compute(
-            average="macro"
-        )["f1"]
-    )
+    loss = total_loss / total_examples
+    accuracy = accuracy_metric.compute()["accuracy"]
+    macro_f1 = f1_metric.compute(average="macro")["f1"]
 
     return loss, accuracy, macro_f1
-
-
-def plot_training_history(
-    history,
-    output_dir=TRAINING_PLOTS_DIR,
-):
-
-    output_dir = Path(output_dir)
-    output_dir.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    epochs = range(
-        1,
-        len(history["train_loss"]) + 1
-    )
-
-    # ========================================================
-    # LOSS
-    # ========================================================
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-
-    ax.plot(
-        epochs,
-        history["train_loss"],
-        marker="o",
-        label="Train Loss",
-    )
-
-    ax.plot(
-        epochs,
-        history["validation_loss"],
-        marker="o",
-        label="Validation Loss",
-    )
-
-    ax.set_xlabel("Epoch")
-    ax.set_ylabel("Loss")
-    ax.set_title("Training vs Validation Loss")
-
-    ax.legend()
-    ax.grid(True)
-    ax.set_xticks(list(epochs))
-
-    fig.tight_layout()
-    fig.savefig(
-        output_dir / "loss.png",
-        dpi=200,
-    )
-    plt.close(fig)
-
-    # ========================================================
-    # ACCURACY
-    # ========================================================
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-
-    ax.plot(
-        epochs,
-        history["train_accuracy"],
-        marker="o",
-        label="Train Accuracy",
-    )
-
-    ax.plot(
-        epochs,
-        history["validation_accuracy"],
-        marker="o",
-        label="Validation Accuracy",
-    )
-
-    ax.set_xlabel("Epoch")
-    ax.set_ylabel("Accuracy")
-    ax.set_title("Training vs Validation Accuracy")
-
-    ax.legend()
-    ax.grid(True)
-    ax.set_xticks(list(epochs))
-
-    fig.tight_layout()
-    fig.savefig(
-        output_dir / "accuracy.png",
-        dpi=200,
-    )
-    plt.close(fig)
-
-    # ========================================================
-    # MACRO F1
-    # ========================================================
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-
-    ax.plot(
-        epochs,
-        history["validation_macro_f1"],
-        marker="o",
-        label="Validation Macro-F1",
-    )
-
-    ax.set_xlabel("Epoch")
-    ax.set_ylabel("Macro-F1")
-    ax.set_title("Validation Macro-F1")
-
-    ax.legend()
-    ax.grid(True)
-    ax.set_xticks(list(epochs))
-
-    fig.tight_layout()
-    fig.savefig(
-        output_dir / "macro_f1.png",
-        dpi=200,
-    )
-    plt.close(fig)
-
-    print(
-        f"Training plots saved to: {output_dir}"
-    )

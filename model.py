@@ -13,12 +13,22 @@ def create_model(
 ):
     """
     Create the sequence classification model.
+
+    Args:
+        checkpoint: Hugging Face model checkpoint.
+        num_labels: Number of output labels.
+        id2label: Optional id-to-label mapping.
+        label2id: Optional label-to-id mapping.
+
+    Returns:
+        Sequence classification model.
     """
 
     model_kwargs = {
         "num_labels": num_labels,
     }
 
+    # Save readable label names in the model config.
     if id2label is not None:
         model_kwargs["id2label"] = id2label
         model_kwargs["label2id"] = label2id
@@ -43,6 +53,14 @@ def create_optimizer(
 ):
     """
     Create optimizer.
+
+    Args:
+        model: Model to optimize.
+        learning_rate: Optimizer learning rate.
+        weight_decay: AdamW weight decay.
+
+    Returns:
+        AdamW optimizer.
     """
 
     optimizer = AdamW(
@@ -61,6 +79,14 @@ def create_scheduler(
 ):
     """
     Create learning-rate scheduler.
+
+    Args:
+        optimizer: Optimizer to schedule.
+        num_training_steps: Total optimizer steps.
+        warmup_ratio: Fraction of steps used for warmup.
+
+    Returns:
+        Linear learning-rate scheduler.
     """
 
     num_warmup_steps = int(

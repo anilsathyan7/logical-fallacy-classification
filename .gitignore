@@ -14,7 +14,18 @@ wheels/
 
 # Local experiment outputs
 checkpoints/
-plots/
+plots/*
+!plots/data/
+plots/data/*
+!plots/data/label_distribution.png
+!plots/data/token_lengths.png
+!plots/training/
+plots/training/*
+!plots/training/8wfncto3/
+plots/training/8wfncto3/*
+!plots/training/8wfncto3/accuracy.png
+!plots/training/8wfncto3/loss.png
+!plots/training/8wfncto3/macro_f1.png
 wandb/
 
 # Local datasets and generated data

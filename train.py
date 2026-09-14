@@ -1,5 +1,3 @@
-import copy
-
 import torch
 
 
@@ -11,6 +9,20 @@ def train_one_epoch(
     accelerator,
     max_grad_norm,
 ):
+    """
+    Train the model for one epoch.
+
+    Args:
+        model: Model to train.
+        dataloader: Training DataLoader.
+        optimizer: Optimizer.
+        lr_scheduler: Learning-rate scheduler.
+        accelerator: Accelerate runtime.
+        max_grad_norm: Gradient clipping norm.
+
+    Returns:
+        Average loss and accuracy for the epoch.
+    """
 
     model.train()
 
@@ -28,6 +40,7 @@ def train_one_epoch(
 
         loss = outputs.loss
 
+        # Stop early if training becomes numerically unstable.
         if not torch.isfinite(loss):
             raise FloatingPointError(
                 "Non-finite training loss. "
@@ -35,24 +48,15 @@ def train_one_epoch(
                 "or MIXED_PRECISION = 'no'."
             )
 
-        predictions = outputs.logits.argmax(
-            dim=-1
-        )
+        predictions = outputs.logits.argmax(dim=-1)
 
         # -------------------------
         # Statistics
         # -------------------------
 
         batch_size = batch["labels"].size(0)
-
-        total_loss += (
-            loss.item() * batch_size
-        )
-
-        correct += (
-            predictions == batch["labels"]
-        ).sum().item()
-
+        total_loss += loss.item() * batch_size
+        correct += (predictions == batch["labels"]).sum().item()
         total_examples += batch_size
 
         # -------------------------
@@ -61,24 +65,15 @@ def train_one_epoch(
 
         accelerator.backward(loss)
 
-        accelerator.clip_grad_norm_(
-            model.parameters(),
-            max_grad_norm,
-        )
+        # Limit gradient spikes before the optimizer update.
+        accelerator.clip_grad_norm_(model.parameters(), max_grad_norm)
 
         optimizer.step()
         lr_scheduler.step()
-        optimizer.zero_grad(
-            set_to_none=True
-        )
+        optimizer.zero_grad(set_to_none=True)
 
-    epoch_loss = (
-        total_loss / total_examples
-    )
-
-    epoch_accuracy = (
-        correct / total_examples
-    )
+    epoch_loss = total_loss / total_examples
+    epoch_accuracy = correct / total_examples
 
     return epoch_loss, epoch_accuracy
 
@@ -96,6 +91,25 @@ def train(
     early_stopping_patience,
     max_grad_norm,
 ):
+    """
+    Train the model and keep the best validation checkpoint.
+
+    Args:
+        model: Model to train.
+        train_dataloader: Training DataLoader.
+        validation_dataloader: Validation DataLoader.
+        optimizer: Optimizer.
+        lr_scheduler: Learning-rate scheduler.
+        accelerator: Accelerate runtime.
+        num_epochs: Maximum number of epochs.
+        evaluate_fn: Evaluation function.
+        wandb_run: Optional W&B run.
+        early_stopping_patience: Epochs without improvement before stopping.
+        max_grad_norm: Gradient clipping norm.
+
+    Returns:
+        Best model and training history.
+    """
 
     history = {
         "train_loss": [],
@@ -105,18 +119,18 @@ def train(
         "validation_macro_f1": [],
     }
 
-    best_validation_macro_f1 = 0.0
+    best_validation_macro_f1 = float("-inf")
     epochs_without_improvement = 0
 
-    best_model_state = copy.deepcopy(
-        model.state_dict()
-    )
+    # Keep best weights on CPU to avoid extra GPU memory.
+    best_model_state = {
+        key: value.detach().cpu().clone()
+        for key, value in model.state_dict().items()
+    }
 
     for epoch in range(num_epochs):
 
-        print(
-            f"\nEpoch {epoch + 1}/{num_epochs}"
-        )
+        print(f"\nEpoch {epoch + 1}/{num_epochs}")
 
         print("-" * 40)
 
@@ -150,26 +164,13 @@ def train(
         # HISTORY
         # ====================================================
 
-        history["train_loss"].append(
-            train_loss
-        )
+        history["train_loss"].append(train_loss)
+        history["train_accuracy"].append(train_accuracy)
+        history["validation_loss"].append(validation_loss)
+        history["validation_accuracy"].append(validation_accuracy)
+        history["validation_macro_f1"].append(validation_macro_f1)
 
-        history["train_accuracy"].append(
-            train_accuracy
-        )
-
-        history["validation_loss"].append(
-            validation_loss
-        )
-
-        history["validation_accuracy"].append(
-            validation_accuracy
-        )
-
-        history["validation_macro_f1"].append(
-            validation_macro_f1
-        )
-
+        # Log epoch metrics when W&B is enabled.
         if wandb_run is not None:
 
             wandb_run.log(
@@ -188,23 +189,11 @@ def train(
         # ====================================================
 
         print(f"Train Loss:     {train_loss:.4f}")
-
         print(f"Train Accuracy: {train_accuracy:.4f}")
 
-        print(
-            f"Validation Loss:       "
-            f"{validation_loss:.4f}"
-        )
-
-        print(
-            f"Validation Accuracy:   "
-            f"{validation_accuracy:.4f}"
-        )
-
-        print(
-            f"Validation Macro-F1:   "
-            f"{validation_macro_f1:.4f}"
-        )
+        print(f"Validation Loss:       {validation_loss:.4f}")
+        print(f"Validation Accuracy:   {validation_accuracy:.4f}")
+        print(f"Validation Macro-F1:   {validation_macro_f1:.4f}")
 
         # ====================================================
         # BEST MODEL
@@ -215,16 +204,19 @@ def train(
             best_validation_macro_f1 = validation_macro_f1
             epochs_without_improvement = 0
 
-            best_model_state = copy.deepcopy(
-                model.state_dict()
-            )
+            best_model_state = {
+                key: value.detach().cpu().clone()
+                for key, value in model.state_dict().items()
+            }
 
-            print("-> New best model")
+            # Select best model by validation Macro-F1.
+            print(f"-> New best model ({best_validation_macro_f1:.4f})")
 
         else:
 
             epochs_without_improvement += 1
 
+            # Early stopping, if no improvement for several epochs.
             if (
                 early_stopping_patience is not None
                 and epochs_without_improvement
@@ -232,8 +224,9 @@ def train(
             ):
 
                 print(
-                    f"Early stopping at epoch "
-                    f"{epoch + 1}"
+                    f"Early stopping at epoch {epoch + 1} "
+                    f"(best validation Macro-F1: "
+                    f"{best_validation_macro_f1:.4f})"
                 )
 
                 break
@@ -242,13 +235,19 @@ def train(
     # RESTORE BEST MODEL
     # ========================================================
 
-    model.load_state_dict(
-        best_model_state
+    model.load_state_dict(best_model_state)
+
+    # Report metrics from the best validation epoch.
+    best_epoch_index = max(
+        range(len(history["validation_macro_f1"])),
+        key=history["validation_macro_f1"].__getitem__,
     )
 
-    print(
-        f"\nBest Validation Macro-F1: "
-        f"{best_validation_macro_f1:.4f}"
-    )
+    print(f"\n\nBest Epoch: {best_epoch_index + 1}")
+    print(f"Train Loss:     {history['train_loss'][best_epoch_index]:.4f}")
+    print(f"Train Accuracy: {history['train_accuracy'][best_epoch_index]:.4f}")
+    print(f"Validation Loss:       {history['validation_loss'][best_epoch_index]:.4f}")
+    print(f"Validation Accuracy:   {history['validation_accuracy'][best_epoch_index]:.4f}")
+    print(f"Validation Macro-F1:   {history['validation_macro_f1'][best_epoch_index]:.4f}")
 
     return model, history

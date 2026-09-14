@@ -4,63 +4,37 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.pyplot as plt
 
 
-def save_label_distribution_plot(
-    dataset,
-    labels_column,
-    output_dir,
-):
+def save_label_distribution_plot(dataset, labels_column, output_dir):
     """
     Save a plot with the number of examples for each label.
+
+    Args:
+        dataset: Dataset with train/validation/test splits.
+        labels_column: Label column name.
+        output_dir: Directory for saved plots.
     """
 
-    label_feature = (
-        dataset["train"]
-        .features[labels_column]
-    )
-
-    label_names = getattr(
-        label_feature,
-        "names",
-        None,
-    )
-
-    label_ids = range(
-        label_feature.num_classes
-    )
+    label_feature = dataset["train"].features[labels_column]
+    label_names = getattr(label_feature, "names", None)
+    label_ids = range(label_feature.num_classes)
 
     if label_names is None:
-        label_names = [
-            str(label_id)
-            for label_id in label_ids
-        ]
+        label_names = [str(label_id) for label_id in label_ids]
 
     counts_by_split = {
-        split: Counter(
-            dataset[split][labels_column]
-        )
-        for split in dataset
+        split: Counter(dataset[split][labels_column]) for split in dataset
     }
 
-    left = [
-        0
-        for _ in label_ids
-    ]
-
-    output_path = (
-        Path(output_dir)
-        / "label_distribution.png"
-    )
+    left = [0 for _ in label_ids]
+    output_path = Path(output_dir) / "label_distribution.png"
 
     fig, ax = plt.subplots(figsize=(10, 7))
 
     for split, counts in counts_by_split.items():
-        values = [
-            counts.get(label_id, 0)
-            for label_id in label_ids
-        ]
+        values = [counts.get(label_id, 0) for label_id in label_ids]
 
         ax.barh(
             label_names,
@@ -69,10 +43,7 @@ def save_label_distribution_plot(
             label=split,
         )
 
-        left = [
-            current + value
-            for current, value in zip(left, values)
-        ]
+        left = [current + value for current, value in zip(left, values)]
 
     ax.set_xlabel("Number of examples")
     ax.set_ylabel("Label")
@@ -84,26 +55,22 @@ def save_label_distribution_plot(
     plt.close(fig)
 
 
-def save_token_lengths_plot(
-    tokenized_dataset,
-    output_dir,
-):
+def save_token_lengths_plot(tokenized_dataset, output_dir):
     """
     Save a plot with tokenized input lengths for each split.
+
+    Args:
+        tokenized_dataset: Tokenized dataset with input_ids.
+        output_dir: Directory for saved plots.
     """
 
-    output_path = (
-        Path(output_dir)
-        / "token_lengths.png"
-    )
+    output_path = Path(output_dir) / "token_lengths.png"
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
     for split in tokenized_dataset:
-        lengths = [
-            len(input_ids)
-            for input_ids in tokenized_dataset[split]["input_ids"]
-        ]
+        split_input_ids = tokenized_dataset[split]["input_ids"]
+        lengths = [len(input_ids) for input_ids in split_input_ids]
 
         ax.hist(
             lengths,
@@ -122,32 +89,20 @@ def save_token_lengths_plot(
     plt.close(fig)
 
 
-def save_data_plots(
-    dataset,
-    tokenized_dataset,
-    labels_column,
-    output_dir,
-):
+def save_data_plots(dataset, tokenized_dataset, labels_column, output_dir):
     """
     Save dataset label-count and token-length plots.
+
+    Args:
+        dataset: Original dataset with labels.
+        tokenized_dataset: Tokenized dataset with input_ids.
+        labels_column: Label column name.
+        output_dir: Directory for saved plots.
     """
 
-    Path(output_dir).mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    save_label_distribution_plot(
-        dataset,
-        labels_column,
-        output_dir,
-    )
+    save_label_distribution_plot(dataset, labels_column, output_dir)
+    save_token_lengths_plot(tokenized_dataset, output_dir)
 
-    save_token_lengths_plot(
-        tokenized_dataset,
-        output_dir,
-    )
-
-    print(
-        f"Data plots saved to: {output_dir}"
-    )
+    print(f"Data plots saved to: {output_dir}")

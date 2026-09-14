@@ -7,7 +7,6 @@ DATASET_CONFIG = "classification"
 TEXT_COLUMN = "text"
 LABEL_COLUMN = "label"
 DATA_PLOTS_DIR = "plots/data"
-TRAINING_PLOTS_DIR = "plots/training"
 
 BATCH_SIZE = 16
 NUM_EPOCHS = 10
@@ -18,6 +17,7 @@ EARLY_STOPPING_PATIENCE = 3
 SEED = 42
 MAX_GRAD_NORM = 1.0
 MIXED_PRECISION = "bf16"
+RUN_TEST = True
 
 WANDB_PROJECT = "fallacy-classifier"
 WANDB_MODE = None
