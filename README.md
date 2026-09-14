@@ -58,7 +58,7 @@ combined CSV can be committed.
 
 Best completed Kuwrom runs so far:
 
-| Model | Run | Best Dev Macro-F1 | Test Accuracy | Test Macro-F1 |
+| Model | Run | Best Validation Macro-F1 | Test Accuracy | Test Macro-F1 |
 | --- | --- | ---: | ---: | ---: |
 | `microsoft/deberta-v3-base` | `l1k8t4wj` | 0.9391 | 0.9411 | 0.9409 |
 | `answerdotai/ModernBERT-base` | `7bpgpfq2` | 0.9377 | 0.9395 | 0.9391 |

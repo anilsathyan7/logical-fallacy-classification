@@ -2,10 +2,10 @@ from pathlib import Path
 
 import evaluate
 import matplotlib
+import torch
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import torch
+import matplotlib.pyplot as plt  # noqa: E402
 
 from config import TRAINING_PLOTS_DIR
 
@@ -111,14 +111,14 @@ def plot_training_history(
 
     ax.plot(
         epochs,
-        history["dev_loss"],
+        history["validation_loss"],
         marker="o",
-        label="Dev Loss",
+        label="Validation Loss",
     )
 
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Loss")
-    ax.set_title("Training vs Dev Loss")
+    ax.set_title("Training vs Validation Loss")
 
     ax.legend()
     ax.grid(True)
@@ -146,14 +146,14 @@ def plot_training_history(
 
     ax.plot(
         epochs,
-        history["dev_accuracy"],
+        history["validation_accuracy"],
         marker="o",
-        label="Dev Accuracy",
+        label="Validation Accuracy",
     )
 
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Accuracy")
-    ax.set_title("Training vs Dev Accuracy")
+    ax.set_title("Training vs Validation Accuracy")
 
     ax.legend()
     ax.grid(True)
@@ -174,14 +174,14 @@ def plot_training_history(
 
     ax.plot(
         epochs,
-        history["dev_macro_f1"],
+        history["validation_macro_f1"],
         marker="o",
-        label="Dev Macro-F1",
+        label="Validation Macro-F1",
     )
 
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Macro-F1")
-    ax.set_title("Dev Macro-F1")
+    ax.set_title("Validation Macro-F1")
 
     ax.legend()
     ax.grid(True)

@@ -3,7 +3,7 @@ project: fallacy-classifier
 method: bayes
 
 metric:
-  name: dev_macro_f1
+  name: validation_macro_f1
   goal: maximize
 
 command:

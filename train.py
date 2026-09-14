@@ -86,7 +86,7 @@ def train_one_epoch(
 def train(
     model,
     train_dataloader,
-    dev_dataloader,
+    validation_dataloader,
     optimizer,
     lr_scheduler,
     accelerator,
@@ -100,12 +100,12 @@ def train(
     history = {
         "train_loss": [],
         "train_accuracy": [],
-        "dev_loss": [],
-        "dev_accuracy": [],
-        "dev_macro_f1": [],
+        "validation_loss": [],
+        "validation_accuracy": [],
+        "validation_macro_f1": [],
     }
 
-    best_dev_macro_f1 = 0.0
+    best_validation_macro_f1 = 0.0
     epochs_without_improvement = 0
 
     best_model_state = copy.deepcopy(
@@ -134,16 +134,16 @@ def train(
         )
 
         # ====================================================
-        # DEV
+        # VALIDATION
         # ====================================================
 
         (
-            dev_loss,
-            dev_accuracy,
-            dev_macro_f1,
+            validation_loss,
+            validation_accuracy,
+            validation_macro_f1,
         ) = evaluate_fn(
             model,
-            dev_dataloader,
+            validation_dataloader,
         )
 
         # ====================================================
@@ -158,16 +158,16 @@ def train(
             train_accuracy
         )
 
-        history["dev_loss"].append(
-            dev_loss
+        history["validation_loss"].append(
+            validation_loss
         )
 
-        history["dev_accuracy"].append(
-            dev_accuracy
+        history["validation_accuracy"].append(
+            validation_accuracy
         )
 
-        history["dev_macro_f1"].append(
-            dev_macro_f1
+        history["validation_macro_f1"].append(
+            validation_macro_f1
         )
 
         if wandb_run is not None:
@@ -177,9 +177,9 @@ def train(
                     "epoch": epoch + 1,
                     "train_loss": train_loss,
                     "train_accuracy": train_accuracy,
-                    "dev_loss": dev_loss,
-                    "dev_accuracy": dev_accuracy,
-                    "dev_macro_f1": dev_macro_f1,
+                    "validation_loss": validation_loss,
+                    "validation_accuracy": validation_accuracy,
+                    "validation_macro_f1": validation_macro_f1,
                 }
             )
 
@@ -191,19 +191,28 @@ def train(
 
         print(f"Train Accuracy: {train_accuracy:.4f}")
 
-        print(f"Dev Loss:       {dev_loss:.4f}")
+        print(
+            f"Validation Loss:       "
+            f"{validation_loss:.4f}"
+        )
 
-        print(f"Dev Accuracy:   {dev_accuracy:.4f}")
+        print(
+            f"Validation Accuracy:   "
+            f"{validation_accuracy:.4f}"
+        )
 
-        print(f"Dev Macro-F1:   {dev_macro_f1:.4f}")
+        print(
+            f"Validation Macro-F1:   "
+            f"{validation_macro_f1:.4f}"
+        )
 
         # ====================================================
         # BEST MODEL
         # ====================================================
 
-        if dev_macro_f1 > best_dev_macro_f1:
+        if validation_macro_f1 > best_validation_macro_f1:
 
-            best_dev_macro_f1 = dev_macro_f1
+            best_validation_macro_f1 = validation_macro_f1
             epochs_without_improvement = 0
 
             best_model_state = copy.deepcopy(
@@ -238,8 +247,8 @@ def train(
     )
 
     print(
-        f"\nBest Dev Macro-F1: "
-        f"{best_dev_macro_f1:.4f}"
+        f"\nBest Validation Macro-F1: "
+        f"{best_validation_macro_f1:.4f}"
     )
 
     return model, history

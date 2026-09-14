@@ -1,15 +1,12 @@
-from torch.utils.data import DataLoader
-
-from config import DATA_PLOTS_DIR
 from datasets import ClassLabel, load_dataset
+from torch.utils.data import DataLoader
 from transformers import (
     AutoTokenizer,
     DataCollatorWithPadding,
 )
+
+from config import DATA_PLOTS_DIR
 from utils import save_data_plots
-
-
-LABELS_COLUMN = "labels"
 
 
 def load_data(
@@ -19,21 +16,20 @@ def load_data(
 ):
     """
     Load and prepare the logical fallacy dataset.
+
+    Args:
+        dataset_name: Hugging Face dataset name.
+        dataset_config: Dataset config name.
+        label_column: Source label column.
+
+    Returns:
+        Dataset with a ClassLabel "labels" column.
     """
 
     dataset = load_dataset(
         dataset_name,
         dataset_config,
     )
-
-    # Keep the rest of the code using train/dev/test names.
-    if (
-        "dev" not in dataset
-        and "validation" in dataset
-    ):
-        dataset["dev"] = dataset.pop(
-            "validation"
-        )
 
     label_feature = (
         dataset["train"]
@@ -47,10 +43,10 @@ def load_data(
         )
 
     # Transformers expects the label column to be named labels
-    if label_column != LABELS_COLUMN:
+    if label_column != "labels":
         dataset = dataset.rename_column(
             label_column,
-            LABELS_COLUMN
+            "labels"
         )
 
     return dataset
@@ -63,6 +59,14 @@ def tokenize_data(
 ):
     """
     Tokenize the text data.
+
+    Args:
+        dataset: Dataset with text and labels.
+        checkpoint: Tokenizer checkpoint.
+        text_column: Source text column.
+
+    Returns:
+        Tokenized dataset and tokenizer.
     """
 
     tokenizer = AutoTokenizer.from_pretrained(
@@ -78,7 +82,7 @@ def tokenize_data(
     columns_to_remove = [
         column
         for column in dataset["train"].column_names
-        if column != LABELS_COLUMN
+        if column != "labels"
     ]
 
     tokenized_dataset = dataset.map(
@@ -96,7 +100,15 @@ def create_dataloaders(
     batch_size,
 ):
     """
-    Create train, dev and test DataLoaders.
+    Create train, validation and test DataLoaders.
+
+    Args:
+        tokenized_dataset: Tokenized train/validation/test dataset.
+        tokenizer: Tokenizer for dynamic padding.
+        batch_size: Batch size per DataLoader.
+
+    Returns:
+        Train, validation and test DataLoaders.
     """
 
     data_collator = DataCollatorWithPadding(
@@ -110,8 +122,8 @@ def create_dataloaders(
         collate_fn=data_collator,
     )
 
-    dev_dataloader = DataLoader(
-        tokenized_dataset["dev"],
+    validation_dataloader = DataLoader(
+        tokenized_dataset["validation"],
         shuffle=False,
         batch_size=batch_size,
         collate_fn=data_collator,
@@ -126,7 +138,7 @@ def create_dataloaders(
 
     return (
         train_dataloader,
-        dev_dataloader,
+        validation_dataloader,
         test_dataloader,
     )
 
@@ -141,6 +153,17 @@ def prepare_data(
 ):
     """
     Complete data preparation pipeline.
+
+    Args:
+        dataset_name: Hugging Face dataset name.
+        dataset_config: Dataset config name.
+        text_column: Source text column.
+        label_column: Source label column.
+        checkpoint: Tokenizer checkpoint.
+        batch_size: Batch size per DataLoader.
+
+    Returns:
+        Dataset, tokenized dataset, tokenizer, dataloaders and label count.
     """
 
     dataset = load_data(
@@ -158,7 +181,7 @@ def prepare_data(
     save_data_plots(
         dataset,
         tokenized_dataset,
-        LABELS_COLUMN,
+        "labels",
         DATA_PLOTS_DIR,
     )
 
@@ -170,7 +193,7 @@ def prepare_data(
 
     num_labels = (
         tokenized_dataset["train"]
-        .features[LABELS_COLUMN]
+        .features["labels"]
         .num_classes
     )
 
@@ -214,7 +237,7 @@ if __name__ == "__main__":
 
     print(
         f"label_names: "
-        f"{dataset['train'].features[LABELS_COLUMN].names}"
+        f"{dataset['train'].features['labels'].names}"
     )
 
     print(f"columns: {dataset['train'].column_names}")

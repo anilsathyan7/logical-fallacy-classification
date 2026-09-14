@@ -5,43 +5,36 @@ from accelerate import Accelerator
 from accelerate.utils import set_seed
 
 from config import (
-    CHECKPOINT,
-    DATASET_NAME,
-    DATASET_CONFIG,
-    TEXT_COLUMN,
-    LABEL_COLUMN,
     BATCH_SIZE,
-    NUM_EPOCHS,
-    LEARNING_RATE,
-    WEIGHT_DECAY,
-    WARMUP_RATIO,
+    BEST_MODEL_PATH,
+    CHECKPOINT,
+    DATASET_CONFIG,
+    DATASET_NAME,
     EARLY_STOPPING_PATIENCE,
-    SEED,
+    LABEL_COLUMN,
+    LEARNING_RATE,
     MAX_GRAD_NORM,
     MIXED_PRECISION,
-    BEST_MODEL_PATH,
+    NUM_EPOCHS,
+    SEED,
+    TEXT_COLUMN,
     TRAINING_PLOTS_DIR,
-    WANDB_PROJECT,
     WANDB_MODE,
+    WANDB_PROJECT,
+    WEIGHT_DECAY,
+    WARMUP_RATIO,
 )
-
-from data import (
-    LABELS_COLUMN,
-    prepare_data,
+from data import prepare_data
+from metrics import (
+    evaluate_model,
+    plot_training_history,
 )
-
 from model import (
     create_model,
     create_optimizer,
     create_scheduler,
 )
-
 from train import train
-
-from metrics import (
-    evaluate_model,
-    plot_training_history,
-)
 
 
 def main():
@@ -120,7 +113,7 @@ def main():
 
         (
             train_dataloader,
-            dev_dataloader,
+            validation_dataloader,
             test_dataloader,
         ) = dataloaders
 
@@ -128,18 +121,23 @@ def main():
 
         print(f"Train size: {len(dataset['train'])}")
 
-        print(f"Dev size: {len(dataset['dev'])}")
+        print(
+            f"Validation size: "
+            f"{len(dataset['validation'])}"
+        )
 
         print(f"Test size: {len(dataset['test'])}")
 
         run.summary["num_labels"] = num_labels
         run.summary["train_size"] = len(dataset["train"])
-        run.summary["dev_size"] = len(dataset["dev"])
+        run.summary["validation_size"] = len(
+            dataset["validation"]
+        )
         run.summary["test_size"] = len(dataset["test"])
 
         label_names = (
             dataset["train"]
-            .features[LABELS_COLUMN]
+            .features["labels"]
             .names
         )
 
@@ -201,14 +199,14 @@ def main():
 
         (
             train_dataloader,
-            dev_dataloader,
+            validation_dataloader,
             test_dataloader,
             model,
             optimizer,
             lr_scheduler,
         ) = accelerator.prepare(
             train_dataloader,
-            dev_dataloader,
+            validation_dataloader,
             test_dataloader,
             model,
             optimizer,
@@ -222,7 +220,7 @@ def main():
         model, history = train(
             model=model,
             train_dataloader=train_dataloader,
-            dev_dataloader=dev_dataloader,
+            validation_dataloader=validation_dataloader,
             optimizer=optimizer,
             lr_scheduler=lr_scheduler,
             accelerator=accelerator,
@@ -233,8 +231,8 @@ def main():
             max_grad_norm=max_grad_norm,
         )
 
-        run.summary["best_dev_macro_f1"] = max(
-            history["dev_macro_f1"]
+        run.summary["best_validation_macro_f1"] = max(
+            history["validation_macro_f1"]
         )
 
         # ====================================================
