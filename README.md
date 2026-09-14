@@ -159,5 +159,16 @@ Best completed Kuwrom runs:
 | `answerdotai/ModernBERT-base` | `7bpgpfq2` | 0.9377 | 0.9395 | 0.9391 |
 | `sentence-transformers/all-MiniLM-L6-v2` | `8wfncto3` | 0.9336 | 0.9358 | 0.9358 |
 
+### Hyperparameters
+
+| Model | Learning Rate | Weight Decay | Warmup Ratio | Batch Size |
+| --- | ---: | ---: | ---: | ---: |
+| `microsoft/deberta-v3-base` | `3e-5` | `0.01` | `0.00` | `16` |
+| `answerdotai/ModernBERT-base` | `3e-5` | `0.01` | `0.06` | `16` |
+| `sentence-transformers/all-MiniLM-L6-v2` | `2e-5` | `0.01` | `0.00` | `16` |
+
+All three runs used a maximum of 10 epochs, early-stopping patience of 3,
+gradient clipping at `1.0`, seed `42`, and BF16 mixed precision.
+
 The next phase is fine-tuning and evaluation on more realistic CoCoLoFa and
 Touché examples, since Kuwrom may overestimate performance on real arguments.
