@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 
 from config import DATA_PLOTS_DIR
-from datasets import ClassLabel, Dataset, DatasetDict, load_dataset
+from datasets import ClassLabel, load_dataset
 from transformers import (
     AutoTokenizer,
     DataCollatorWithPadding,
@@ -10,67 +10,6 @@ from utils import save_data_plots
 
 
 LABELS_COLUMN = "labels"
-COCOLOFA_DATA_FILES = {
-    "train": "https://raw.githubusercontent.com/Crowd-AI-Lab/cocolofa/main/train.json",
-    "dev": "https://raw.githubusercontent.com/Crowd-AI-Lab/cocolofa/main/dev.json",
-    "test": "https://raw.githubusercontent.com/Crowd-AI-Lab/cocolofa/main/test.json",
-}
-
-
-def normalize_label(label):
-    """
-    Convert label text to stable class names.
-    """
-
-    return (
-        label.strip()
-        .lower()
-        .replace(" ", "_")
-    )
-
-
-def flatten_cocolofa_split(articles):
-    """
-    Flatten CoCoLoFa articles into comment-level rows.
-    """
-
-    rows = []
-
-    for article in articles:
-        for comment in article["comments"]:
-            text = comment["comment"].strip()
-
-            if not text:
-                continue
-
-            rows.append(
-                {
-                    "text": text,
-                    "label": normalize_label(
-                        comment["fallacy"]
-                    ),
-                }
-            )
-
-    return Dataset.from_list(rows)
-
-
-def load_cocolofa_data():
-    """
-    Load CoCoLoFa from GitHub and flatten comments.
-    """
-
-    articles_by_split = load_dataset(
-        "json",
-        data_files=COCOLOFA_DATA_FILES,
-    )
-
-    return DatasetDict(
-        {
-            split: flatten_cocolofa_split(articles)
-            for split, articles in articles_by_split.items()
-        }
-    )
 
 
 def load_data(
@@ -82,13 +21,10 @@ def load_data(
     Load and prepare the logical fallacy dataset.
     """
 
-    if dataset_name == "cocolofa":
-        dataset = load_cocolofa_data()
-    else:
-        dataset = load_dataset(
-            dataset_name,
-            dataset_config,
-        )
+    dataset = load_dataset(
+        dataset_name,
+        dataset_config,
+    )
 
     # Keep the rest of the code using train/dev/test names.
     if (

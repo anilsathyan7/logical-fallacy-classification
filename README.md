@@ -51,8 +51,8 @@ plots/
 wandb/
 ```
 
-Those outputs are ignored by Git. Local downloaded/generated datasets are also
-ignored by default.
+Those outputs are ignored by Git. Raw local downloads are ignored; the cleaned
+combined CSV can be committed.
 
 ## Current Results
 

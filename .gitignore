@@ -21,6 +21,7 @@ wandb/
 cocolofa/
 touche/
 *.csv
+!cocolofa_touche_combined.csv
 
 # Environment files
 .env
