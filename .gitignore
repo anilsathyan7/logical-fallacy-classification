@@ -43,10 +43,10 @@ plots/evaluation/8wfncto3/*
 wandb/
 
 # Local datasets and generated data
-datasets/cocolofa/
-datasets/touche/
 datasets/*.csv
 !datasets/cocolofa_touche_combined.csv
+!datasets/hard_real_test.csv
+!datasets/easy_synthetic_test.csv
 
 # Environment files
 .env

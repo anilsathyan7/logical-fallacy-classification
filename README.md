@@ -54,7 +54,17 @@ for the 14 fallacy labels.
 - [`sentence-transformers/all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)
   is much smaller, making it the best option here for fast, low-memory inference.
 
-## W&B Sweeps
+## Hyperparameter Optimization
+
+Hyperparameter optimization (HPO) searches for training settings, such as the
+learning rate and weight decay, that give the best validation performance.
+Unlike model weights, these settings are chosen before each training run.
+
+Weights & Biases (W&B) records each run's configuration and metrics so experiments
+can be compared. W&B Sweeps automates HPO by coordinating runs with different
+settings from a search space defined in a YAML file. This project uses Bayesian
+search, which uses previous results to choose promising settings, and maximizes
+validation Macro-F1, which gives each fallacy class equal weight.
 
 Create a sweep, then start an agent with the returned sweep ID:
 
@@ -218,10 +228,30 @@ The two weakest labels differ as follows:
 Bandwagon is often considered a subtype of ad populum, so this narrow annotation
 boundary likely contributes to both weak F1 scores.
 
-### External Samples
+### Tests
 
-MiniLM correctly classified three of four human-reviewed CoCoLoFa/Touché
-examples, but predicted one `hasty_generalization` as `appeal_to_authority` with
-99.83% confidence. This is too small for an accuracy estimate, but the confident
-error suggests weaker calibration on realistic text; a proper evaluation should
-use all 267 test examples with labels that exactly match Kuwrom.
+The saved All-MiniLM checkpoint (`8wfncto3`) was evaluated on the easy examples
+and the mapped CoCoLoFa/Touché dataset using `predict.py`.
+
+| Dataset | Examples | Correct | Accuracy |
+| --- | ---: | ---: | ---: |
+| `easy_synthetic_test.csv` | 13 | 12 | 92.31% |
+| `hard_real_test.csv` | 3,746 | 1,775 | 47.38% |
+
+- **Easy examples:** nine synthetic examples and four external samples. The only
+  error was `hasty_generalization` predicted as `appeal_to_authority` with 99.83%
+  confidence. This small, selected set is a sanity check, not a general benchmark.
+- **Hard examples:** all source splits were included. The original test split
+  alone scored 44.39% (178/401). The model overpredicts `slippery_slope`, assigning
+  it to 1,565 examples when only 711 carry that label. The largest errors are
+  `red_herring` (270), `hasty_generalization` (234), and `false_dilemma` (227)
+  predicted as `slippery_slope`.
+- **Confidence and likely causes:** 1,199 of the 1,971 hard-set errors had at
+  least 90% confidence. The results suggest limited transfer to external text;
+  different writing styles and overlapping fallacies may contribute. No hard-set
+  input exceeded the tokenizer's 512-token limit, so truncation does not explain
+  these errors.
+- **Mapping caveat:** `appeal_to_majority` was mapped to `ad_populum`, and
+  `appeal_to_worse_problems` to `red_herring`; these are approximate matches.
+  Accuracy on the four unchanged label categories was 55.62% (2,492 examples).
+  The hard set excludes `none`, `appeal_to_nature`, and `appeal_to_tradition`.
