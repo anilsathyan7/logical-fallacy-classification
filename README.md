@@ -1,18 +1,18 @@
 # Logical Fallacy Classifier
 
-Logical fallacies are errors in reasoning that can make an argument seem
+**Logical fallacies** are errors in reasoning that can make an argument seem
 convincing without adequately supporting its conclusion. Examples include
 attacking the person instead of their argument or treating a popular belief
 as proof.
 
-This project treats fallacy detection as a text classification task, fine-tuning
-BERT-based encoder models (DeBERTa, ModernBERT, and MiniLM) to assign arguments
-to 14 fallacy categories. It uses Hugging Face Transformers and PyTorch for
-modeling, Accelerate for training, and Weights & Biases for experiment tracking
-and hyperparameter optimization.
+This project treats fallacy detection as a **text classification task**,
+fine-tuning **BERT-based encoder models** (DeBERTa, ModernBERT, and MiniLM) to
+assign arguments to **14 fallacy categories**. It uses **Hugging Face
+Transformers and PyTorch** for modeling, **Accelerate** for training, and
+**Weights & Biases** for experiment tracking and hyperparameter optimization.
 
-The experiments compare models, analyze their errors, and test a selected model
-on more realistic arguments to assess how well it generalizes.
+The experiments **compare models**, **analyze their errors**, and test a selected
+model on more realistic arguments to assess **how well it generalizes**.
 
 ## Setup
 
