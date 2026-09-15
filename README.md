@@ -349,14 +349,15 @@ and the mapped CoCoLoFa/Touché dataset using `predict.py`.
 | `easy_synthetic_test.csv` | 13 | 12 | **92.31%** |
 | `hard_real_test.csv` | 3,746 | 1,775 | **47.38%** |
 
-The easy set contains nine synthetic examples and four external samples. Its
-only error is a `hasty_generalization` predicted as `appeal_to_authority` with
-**99.83% confidence**. This is a useful sanity check, but thirteen selected
-examples are too few to support a general performance claim.
+#### Observations
 
-**Performance drops sharply on the hard set.** The original test split scores
-**44.39%** (178/401), close to the **47.38%** obtained across all splits. Recall
-also varies widely by class:
+- **Easy-set check:** The easy set contains nine synthetic examples and four
+  external samples. Its only error is a `hasty_generalization` predicted as
+  `appeal_to_authority` with **99.83% confidence**. Thirteen selected examples
+  are useful as a sanity check, but are too few for a general performance claim.
+- **Generalization gap:** Performance drops sharply on the hard set. The original
+  test split scores **44.39%** (178/401), close to the **47.38%** obtained across
+  all splits. Recall also varies widely by class:
 
 | Label | Recall |
 | --- | ---: |
@@ -367,22 +368,22 @@ also varies widely by class:
 | `ad_populum` | 30.2% |
 | `hasty_generalization` | 16.0% |
 
-The model **predicts `slippery_slope` 1,565 times** even though the hard set contains
-711 such examples. Its largest error groups are `red_herring` (270),
-`hasty_generalization` (234), and `false_dilemma` (227), all predicted as
-`slippery_slope`. It is often very sure when it is wrong: **1,199 of the 1,971
-errors** have at least 90% confidence.
-
-Part of this drop may come from the longer, less templated writing style and from
-arguments that contain cues for more than one fallacy. Label alignment also
-matters. `appeal_to_majority` is mapped to `ad_populum`, while
-`appeal_to_worse_problems` is mapped to `red_herring`; both are **approximate
-mappings**. On the four categories whose names match directly, accuracy improves
-to **55.62%** across 2,492 examples, but remains well below the Kuwrom result.
-The hard set excludes `none`, `appeal_to_nature`, and `appeal_to_tradition`
-because Kuwrom has no direct counterparts. No input exceeds the model's
-512-token limit, so input truncation does not explain the errors.
-
-Overall, the model learns the Kuwrom label structure well but **does not transfer
-reliably to the external data**. The next useful experiment is to fine-tune on the
-external training split and reserve its test split for evaluation.
+- **Class bias:** The model predicts `slippery_slope` 1,565 times even though the
+  hard set contains 711 such examples. Its largest error groups are `red_herring`
+  (270), `hasty_generalization` (234), and `false_dilemma` (227), all predicted
+  as `slippery_slope`.
+- **Confidence:** The model is often very sure when it is wrong. **1,199 of the
+  1,971 errors** have at least 90% confidence.
+- **Likely causes:** The external examples are longer and less templated, and
+  some contain cues for more than one fallacy. No input exceeds the model's
+  512-token limit, so input truncation does not explain the errors.
+- **Mapping limits:** `appeal_to_majority` is mapped to `ad_populum`, while
+  `appeal_to_worse_problems` is mapped to `red_herring`; both are approximate.
+  On the four categories whose names match directly, accuracy improves to
+  **55.62%** across 2,492 examples. The hard set excludes `none`,
+  `appeal_to_nature`, and `appeal_to_tradition` because Kuwrom has no direct
+  counterparts.
+- **Conclusion:** The model learns the Kuwrom label structure well but **does not
+  transfer reliably to the external data**. The next useful experiment is to
+  fine-tune on the external training split and reserve its test split for
+  evaluation.
