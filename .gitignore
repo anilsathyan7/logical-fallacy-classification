@@ -21,6 +21,16 @@ checkpoints/best_model/*
 !checkpoints/best_model/8wfncto3/model.safetensors
 !checkpoints/best_model/8wfncto3/tokenizer.json
 !checkpoints/best_model/8wfncto3/tokenizer_config.json
+!checkpoints/best_model/27yd0dtb/
+!checkpoints/best_model/27yd0dtb/config.json
+!checkpoints/best_model/27yd0dtb/model.safetensors
+!checkpoints/best_model/27yd0dtb/tokenizer.json
+!checkpoints/best_model/27yd0dtb/tokenizer_config.json
+!checkpoints/best_model/mc7vjzml/
+!checkpoints/best_model/mc7vjzml/config.json
+!checkpoints/best_model/mc7vjzml/model.safetensors
+!checkpoints/best_model/mc7vjzml/tokenizer.json
+!checkpoints/best_model/mc7vjzml/tokenizer_config.json
 plots/
 wandb/
 
