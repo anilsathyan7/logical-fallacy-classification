@@ -1,4 +1,6 @@
-from datasets import ClassLabel, load_dataset
+from pathlib import Path
+
+from datasets import ClassLabel, DatasetDict, load_dataset
 from torch.utils.data import DataLoader
 from transformers import (
     AutoTokenizer,
@@ -7,6 +9,18 @@ from transformers import (
 
 from config import DATA_PLOTS_DIR
 from utils import save_data_plots
+
+
+def load_csv_data(path):
+    """Load one CSV with a split column as train/validation/test datasets."""
+
+    rows = load_dataset("csv", data_files=str(path))["train"]
+    return DatasetDict(
+        {
+            split: rows.filter(lambda row: row["split"] == split).remove_columns("split")
+            for split in ("train", "validation", "test")
+        }
+    )
 
 
 def load_data(
@@ -18,18 +32,21 @@ def load_data(
     Load and prepare the logical fallacy dataset.
 
     Args:
-        dataset_name: Hugging Face dataset name.
-        dataset_config: Dataset config name.
+        dataset_name: Hugging Face dataset name or local CSV path.
+        dataset_config: Dataset config name (unused for CSV files).
         label_column: Source label column.
 
     Returns:
         Dataset with a ClassLabel "labels" column.
     """
 
-    dataset = load_dataset(
-        dataset_name,
-        dataset_config,
-    )
+    if Path(dataset_name).suffix.lower() == ".csv":
+        dataset = load_csv_data(dataset_name)
+    else:
+        dataset = load_dataset(
+            dataset_name,
+            dataset_config,
+        )
 
     label_feature = (
         dataset["train"]
@@ -151,6 +168,7 @@ def prepare_data(
     label_column,
     checkpoint,
     batch_size,
+    data_plots_dir=DATA_PLOTS_DIR,
 ):
     """
     Complete data preparation pipeline.
@@ -162,6 +180,7 @@ def prepare_data(
         label_column: Source label column.
         checkpoint: Tokenizer checkpoint.
         batch_size: Batch size per DataLoader.
+        data_plots_dir: Directory for dataset summary plots.
 
     Returns:
         Dataset, tokenized dataset, tokenizer, dataloaders and label count.
@@ -184,7 +203,7 @@ def prepare_data(
         dataset,
         tokenized_dataset,
         "labels",
-        DATA_PLOTS_DIR,
+        data_plots_dir,
     )
 
     dataloaders = create_dataloaders(

@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     examples["predicted_label"] = [prediction["label"] for prediction in predictions]
     examples["confidence"] = [prediction["confidence"] for prediction in predictions]
-    output_path = Path("results") / model_path.name / f"{input_path.stem}_predictions.csv"
+    output_path = Path("results") / model_path.name / "predictions" / input_path.name
     output_path.parent.mkdir(parents=True, exist_ok=True)
     examples.to_csv(output_path, index=False)
     print(f"Predictions saved to: {output_path}")

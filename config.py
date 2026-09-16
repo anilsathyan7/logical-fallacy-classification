@@ -6,8 +6,8 @@ DATASET_NAME = "kuwrom/fallacy"
 DATASET_CONFIG = "classification"
 TEXT_COLUMN = "text"
 LABEL_COLUMN = "label"
-DATA_PLOTS_DIR = "plots/data"
-EVALUATION_PLOTS_DIR = "plots/evaluation"
+RESULTS_DIR = "results"
+DATA_PLOTS_DIR = f"{RESULTS_DIR}/data"
 
 BATCH_SIZE = 16
 NUM_EPOCHS = 10

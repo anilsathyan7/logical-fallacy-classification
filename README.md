@@ -55,12 +55,23 @@ useful for checking how well the models generalize.
 
 The plots below show the Kuwrom label distribution and token lengths.
 
-![Label distribution](plots/data/label_distribution.png)
+![Label distribution](results/8wfncto3/data/label_distribution.png)
 
-![Token-length distribution](plots/data/token_lengths.png)
+![Token-length distribution](results/8wfncto3/data/token_lengths.png)
 
-We also combined CoCoLoFa and Touché for external evaluation. See
-[Tests](#tests) for the dataset details and results.
+For external evaluation and follow-up fine-tuning, we combined CoCoLoFa news
+comments with Touché Reddit arguments. Both CSVs have `split`, `text`, and
+`label` columns and retain the source splits:
+
+| Dataset | Labels | Training | Validation | Test |
+| --- | ---: | ---: | ---: | ---: |
+| `datasets/cocolofa_touche_full.csv` | 9, including `none` | 6,120 | 1,630 | 890 |
+| `datasets/hard_real_test.csv` | 6 mapped to Kuwrom | 2,625 | 720 | 401 |
+
+The full file keeps all nine harmonized categories; the mapped file excludes
+categories without Kuwrom counterparts. See [Tests](#tests) and
+[Fine-tuning on CoCoLoFa and Touché](#fine-tuning-on-cocolofa-and-touch%C3%A9)
+for the evaluation and fine-tuning results.
 
 ## Models
 
@@ -163,7 +174,7 @@ split. The run then saves:
 
 - the model and tokenizer under `checkpoints/best_model/<run-id>/`;
 - the classification report and confusion matrix under
-  `plots/evaluation/<run-id>/`;
+  `results/<run-id>/evaluation/`;
 - training settings and epoch-level metrics in W&B.
 
 The curves below show how this selection worked for the best All-MiniLM run,
@@ -171,14 +182,14 @@ The curves below show how this selection worked for the best All-MiniLM run,
 
 ### Accuracy
 
-![All-MiniLM training and validation accuracy](plots/training/8wfncto3/accuracy.png)
+![All-MiniLM training and validation accuracy](results/8wfncto3/training/accuracy.png)
 
 Training accuracy continues to improve while validation accuracy levels off near
 93%, showing a growing generalization gap in later epochs.
 
 ### Loss
 
-![All-MiniLM training and validation loss](plots/training/8wfncto3/loss.png)
+![All-MiniLM training and validation loss](results/8wfncto3/training/loss.png)
 
 Validation loss reaches its minimum around epoch 2 and then rises as training
 loss falls. This indicates that the model becomes increasingly overconfident
@@ -186,7 +197,7 @@ without comparable validation improvement.
 
 ### Macro-F1
 
-![All-MiniLM validation Macro-F1](plots/training/8wfncto3/macro_f1.png)
+![All-MiniLM validation Macro-F1](results/8wfncto3/training/macro_f1.png)
 
 Validation Macro-F1 peaks at `0.9336` in epoch 7. The training loop selects and
 restores this checkpoint instead of retaining the final epoch.
@@ -224,8 +235,7 @@ and confidence, then adds two columns to the saved CSV:
 - `predicted_label`: the fallacy class with the highest score;
 - `confidence`: the softmax probability assigned to that class.
 
-Results are written to
-`results/<run-id>/<dataset_name>_predictions.csv`.
+Results are written to `results/<run-id>/predictions/<dataset_name>.csv`.
 
 ## Outputs
 
@@ -234,9 +244,10 @@ Training, evaluation, and inference artifacts are kept in separate directories:
 | Path | Contents |
 | --- | --- |
 | `checkpoints/best_model/<run-id>/` | Best model weights, configuration, and tokenizer |
-| `plots/training/<run-id>/` | Training and validation curves |
-| `plots/evaluation/<run-id>/` | Classification report, confusion matrix, and optional UMAP |
-| `results/<run-id>/` | CSV files produced by `predict.py` |
+| `results/<run-id>/training/` | Training and validation curves |
+| `results/<run-id>/evaluation/` | Classification report, confusion matrix, and optional UMAP |
+| `results/<run-id>/data/` | Dataset label distribution and token-length plots |
+| `results/<run-id>/predictions/` | CSV files produced by `predict.py` |
 | `wandb/` | Local W&B run data and logs |
 
 The W&B dashboard also stores each run's configuration, epoch-level metrics,
@@ -284,7 +295,7 @@ hides one important class boundary.
 
 ### Kuwrom Errors
 
-![All-MiniLM normalized test confusion matrix](plots/evaluation/8wfncto3/test_confusion_matrix.png)
+![All-MiniLM normalized test confusion matrix](results/8wfncto3/evaluation/test_confusion_matrix.png)
 
 **Twelve of the fourteen classes** have an F1 score above 0.92, and ten are above
 0.96. The clear exceptions are **`ad_populum` and `the_bandwagon`**:
@@ -309,7 +320,7 @@ definition** as well as a model limitation.
 
 ### Embedding Structure
 
-![All-MiniLM test embedding UMAP](plots/evaluation/8wfncto3/test_embedding_umap.png)
+![All-MiniLM test embedding UMAP](results/8wfncto3/evaluation/test_embedding_umap.png)
 
 Each point in the UMAP is a Kuwrom test example, colored by its true label. The
 left panel uses the original All-MiniLM encoder; the right uses the fine-tuned
@@ -384,6 +395,26 @@ and the mapped CoCoLoFa/Touché dataset using `predict.py`.
   `appeal_to_nature`, and `appeal_to_tradition` because Kuwrom has no direct
   counterparts.
 - **Conclusion:** The model learns the Kuwrom label structure well but **does not
-  transfer reliably to the external data**. The next useful experiment is to
-  fine-tune on the external training split and reserve its test split for
-  evaluation.
+  transfer reliably to the external data**. This motivated the fine-tuning runs
+  below.
+
+### Fine-tuning on CoCoLoFa and Touché
+
+Both runs start from the Kuwrom-trained All-MiniLM checkpoint (`8wfncto3`) and
+replace its 14-class head. They are separate experiments, not sequential stages
+of training.
+
+| Run | Labels | Train / validation / test | Best validation Macro-F1 | Test accuracy | Test Macro-F1 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| [`27yd0dtb`](results/27yd0dtb/evaluation/test_classification_report.json) | 6 mapped labels | 2,625 / 720 / 401 | 81.14% | **80.55%** | 80.46% |
+| [`mc7vjzml`](results/mc7vjzml/evaluation/test_classification_report.json) | 9 combined-dataset labels | 6,120 / 1,630 / 890 | 73.08% | **70.56%** | 69.43% |
+
+- On the six-label test split, accuracy rose from **44.39% before fine-tuning**
+  to **80.55%**. This measures adaptation to the selected, mapped categories.
+- The nine-label run keeps every category, including `none`, so its score is not
+  directly comparable with the six-label result. `hasty_generalization` is its
+  weakest class (38.46% F1), often confused with `none`.
+- Training accuracy kept improving after validation performance leveled off,
+  particularly in the nine-label run (best epoch: 8). More epochs alone are
+  unlikely to fix that gap. These test splits were examined during development,
+  so the scores should not be presented as untouched benchmark results.

@@ -16,7 +16,7 @@ from config import (
     BATCH_SIZE,
     DATASET_CONFIG,
     DATASET_NAME,
-    EVALUATION_PLOTS_DIR,
+    RESULTS_DIR,
     LABEL_COLUMN,
     SEED,
     TEXT_COLUMN,
@@ -242,7 +242,7 @@ def save_umap_comparison_plot(
 if __name__ == "__main__":
     original_model_path = "sentence-transformers/all-MiniLM-L6-v2"
     fine_tuned_model_path = Path("checkpoints/best_model/8wfncto3")
-    output_dir = Path(EVALUATION_PLOTS_DIR) / "8wfncto3"
+    output_dir = Path(RESULTS_DIR) / "8wfncto3" / "evaluation"
     split = "test"
 
     dataset = load_data(

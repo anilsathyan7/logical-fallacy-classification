@@ -16,7 +16,7 @@ from config import (
     DATASET_CONFIG,
     DATASET_NAME,
     EARLY_STOPPING_PATIENCE,
-    EVALUATION_PLOTS_DIR,
+    RESULTS_DIR,
     LABEL_COLUMN,
     LEARNING_RATE,
     MAX_GRAD_NORM,
@@ -41,27 +41,32 @@ from utils import (
 )
 
 
-def main():
+def main(
+    checkpoint=CHECKPOINT,
+    dataset_name=DATASET_NAME,
+    learning_rate=LEARNING_RATE,
+    run_test=RUN_TEST,
+):
     """Run the fallacy classifier training pipeline."""
 
     wandb_kwargs = {
         "project": WANDB_PROJECT,
         "config": {
-            "checkpoint": CHECKPOINT,
-            "dataset_name": DATASET_NAME,
+            "checkpoint": checkpoint,
+            "dataset_name": dataset_name,
             "dataset_config": DATASET_CONFIG,
             "text_column": TEXT_COLUMN,
             "label_column": LABEL_COLUMN,
             "batch_size": BATCH_SIZE,
             "num_epochs": NUM_EPOCHS,
-            "learning_rate": LEARNING_RATE,
+            "learning_rate": learning_rate,
             "weight_decay": WEIGHT_DECAY,
             "warmup_ratio": WARMUP_RATIO,
             "early_stopping_patience": EARLY_STOPPING_PATIENCE,
             "seed": SEED,
             "max_grad_norm": MAX_GRAD_NORM,
             "mixed_precision": MIXED_PRECISION,
-            "run_test": RUN_TEST,
+            "run_test": run_test,
             "run_umap_analysis": RUN_UMAP_ANALYSIS,
         },
     }
@@ -114,6 +119,7 @@ def main():
             label_column=label_column,
             checkpoint=checkpoint,
             batch_size=batch_size,
+            data_plots_dir=Path(RESULTS_DIR) / run.id / "data",
         )
 
         train_dataloader, validation_dataloader, test_dataloader = dataloaders
@@ -214,7 +220,7 @@ def main():
         # ====================================================
 
         model_path = Path(BEST_MODEL_PATH) / run.id
-        evaluation_path = Path(EVALUATION_PLOTS_DIR) / run.id
+        evaluation_path = Path(RESULTS_DIR) / run.id / "evaluation"
 
         if run_test:
             (
@@ -335,4 +341,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    checkpoint = "checkpoints/best_model/8wfncto3"  # Original: "microsoft/deberta-v3-base"
+    dataset_name = "datasets/cocolofa_touche_full.csv"  # Original: "kuwrom/fallacy"
+    learning_rate = 2e-5
+    run_test = True  # Use False while tuning on the validation split.
+    main(
+        checkpoint=checkpoint,
+        dataset_name=dataset_name,
+        learning_rate=learning_rate,
+        run_test=run_test,
+    )

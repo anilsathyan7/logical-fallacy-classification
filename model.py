@@ -1,5 +1,6 @@
 from torch.optim import AdamW
 from transformers import (
+    AutoConfig,
     AutoModelForSequenceClassification,
     get_scheduler,
 )
@@ -24,14 +25,23 @@ def create_model(
         Sequence classification model.
     """
 
-    model_kwargs = {
-        "num_labels": num_labels,
-    }
+    saved_config = AutoConfig.from_pretrained(checkpoint)
+    previous_num_labels = saved_config.num_labels
+    has_classification_head = any(
+        name.endswith("ForSequenceClassification")
+        for name in (saved_config.architectures or [])
+    )
+    saved_config.num_labels = num_labels
 
     # Save readable label names in the model config.
     if id2label is not None:
-        model_kwargs["id2label"] = id2label
-        model_kwargs["label2id"] = label2id
+        saved_config.id2label = id2label
+        saved_config.label2id = label2id
+
+    model_kwargs = {"config": saved_config}
+    if has_classification_head and previous_num_labels != num_labels:
+        # Keep the trained encoder while initializing a head for the new labels.
+        model_kwargs["ignore_mismatched_sizes"] = True
 
     model = (
         AutoModelForSequenceClassification

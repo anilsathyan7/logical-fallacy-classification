@@ -21,30 +21,13 @@ checkpoints/best_model/*
 !checkpoints/best_model/8wfncto3/model.safetensors
 !checkpoints/best_model/8wfncto3/tokenizer.json
 !checkpoints/best_model/8wfncto3/tokenizer_config.json
-plots/*
-!plots/data/
-plots/data/*
-!plots/data/label_distribution.png
-!plots/data/token_lengths.png
-!plots/training/
-plots/training/*
-!plots/training/8wfncto3/
-plots/training/8wfncto3/*
-!plots/training/8wfncto3/accuracy.png
-!plots/training/8wfncto3/loss.png
-!plots/training/8wfncto3/macro_f1.png
-!plots/evaluation/
-plots/evaluation/*
-!plots/evaluation/8wfncto3/
-plots/evaluation/8wfncto3/*
-!plots/evaluation/8wfncto3/test_classification_report.json
-!plots/evaluation/8wfncto3/test_confusion_matrix.png
-!plots/evaluation/8wfncto3/test_embedding_umap.png
+plots/
 wandb/
 
 # Local datasets and generated data
 datasets/*.csv
 !datasets/cocolofa_touche_combined.csv
+!datasets/cocolofa_touche_full.csv
 !datasets/hard_real_test.csv
 !datasets/easy_synthetic_test.csv
 
