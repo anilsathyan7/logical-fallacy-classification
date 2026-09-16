@@ -400,6 +400,10 @@ and the mapped CoCoLoFa/Touché dataset using `predict.py`.
 
 ### Fine-tuning on CoCoLoFa and Touché
 
+CoCoLoFa contains news-article comments annotated for fallacy presence and type;
+Touché contains Reddit comments labeled for fallacy detection and classification.
+The two sources are combined for these external fine-tuning experiments.
+
 Both runs start from the Kuwrom-trained All-MiniLM checkpoint (`8wfncto3`) and
 replace its 14-class head. They are separate experiments, not sequential stages
 of training.
@@ -416,5 +420,13 @@ of training.
   weakest class (38.46% F1), often confused with `none`.
 - Training accuracy kept improving after validation performance leveled off,
   particularly in the nine-label run (best epoch: 8). More epochs alone are
-  unlikely to fix that gap. These test splits were examined during development,
-  so the scores should not be presented as untouched benchmark results.
+  unlikely to fix that gap.
+
+## References
+
+- **Hugging Face fine-tuning:** [LLM Course - Fine-tuning Model](https://huggingface.co/learn/llm-course/chapter3/1).
+- **Weights & Biases:** [W&B - GitHub Repository](https://github.com/wandb/wandb).
+- **Touché dataset:** [Touché 2026 - Fallacy Detection](https://touche.webis.de/clef26/touche26-web/fallacy-detection.html).
+- **CoCoLoFa dataset:** [CoCoLoFa - GitHub Repository](https://github.com/Crowd-AI-Lab/cocolofa).
+- **Hugging Face dataset:** [Huggingface - `kuwrom/fallacy`](https://huggingface.co/datasets/kuwrom/fallacy).
+- **Hugging Face dataset:** [Huggingface - `tasksource/logical-fallacy`](https://huggingface.co/datasets/tasksource/logical-fallacy).
