@@ -99,6 +99,21 @@ both the encoder and the head. Each model also has its own hyperparameter search
   two larger encoders. Its saved checkpoint is also used for the embedding
   analysis and external evaluation below.
 
+The diagram illustrates the general text-classification pipeline, from
+tokenization through the encoder to the prediction head. Exact dimensions and
+layer counts vary by model.
+
+![BERT text classification pipeline](bert.png)
+
+- **Preprocessing:** Each model's tokenizer converts text to token IDs. Inputs
+  are truncated when needed, then padded per batch with an attention mask.
+- **Embeddings:** An embedding lookup turns token IDs into dense vectors. The
+  model also incorporates position information for the token sequence.
+- **Transformer encoder:** Self-attention layers turn those vectors into
+  context-aware representations of the input.
+- **Classification head:** The encoded text is mapped to one score per label;
+  the highest-scoring label is the prediction.
+
 ## Hyperparameter Optimization
 
 **Hyperparameter optimization (HPO)** means trying different training settings
