@@ -114,6 +114,17 @@ layer counts vary by model.
 - **Classification head:** The encoded text is mapped to one score per label;
   the highest-scoring label is the prediction.
 
+Each saved checkpoint in `checkpoints/best_model/<run-id>/` contains:
+
+- `config.json`: Defines the model type, layer dimensions, and label-to-ID
+  mappings so the same classifier architecture can be rebuilt.
+- `model.safetensors`: Stores the learned parameters of the encoder and
+  classification head; these weights fill the architecture from `config.json`.
+- `tokenizer_config.json`: Records how to load the tokenizer, including special
+  tokens, lowercasing, and padding or truncation settings.
+- `tokenizer.json`: Holds the vocabulary and tokenization pipeline that split
+  input text into tokens and map them to token IDs.
+
 ## Hyperparameter Optimization
 
 **Hyperparameter optimization (HPO)** means trying different training settings
